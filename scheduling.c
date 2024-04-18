@@ -89,17 +89,44 @@ int addSchedule(int updateTrainID) {
     printf("       Add Schedule\n");
     printf("==============================\n\n");
 
+    FILE* fp1 = fopen("train_schedule.txt", "r");
     FILE* fptr = fopen("train_schedule.txt", "a");
+
+    if (fp1 == NULL || fptr == NULL) {
+        printf("Error opening file\n");
+        return updateTrainID;
+    }
+
+    TrainSchedule schedule;
+
+    int maxTrainID = 1000;
+
+    while (!feof(fp1)) {
+        fscanf(fp1, "T%d, %[^,], %[^,], %d:%d, %d:%d, %d\n",
+            &schedule.trainID, schedule.departureStation, schedule.arrivalStation,
+            &schedule.time.departureHour, &schedule.time.departureMin,
+            &schedule.time.arrivalHour, &schedule.time.arrivalMin,
+            &schedule.availableSeats);
+        if (schedule.trainID > maxTrainID) {
+            maxTrainID = schedule.trainID;
+        }
+        if (schedule.availableSeats < updateSeats) {
+            updateSeats = schedule.availableSeats;
+        }
+    }
+
+    fclose(fp1);
+
+    updateTrainID = maxTrainID + 1;
+    updateSeats--;
+
+    fptr = fopen("train_schedule.txt", "a");
     if (fptr == NULL) {
         printf("Error opening file\n");
         return updateTrainID;
     }
-    TrainSchedule schedule;
-    schedule.trainID = updateTrainID++;
 
-    schedule.availableSeats = updateSeats;
-
-    printf("Train ID: T%d\n", schedule.trainID);
+    printf("Train ID: T%d\n", updateTrainID);
 
     printf("Enter Departure Station: ");
     scanf("%s", schedule.departureStation);
@@ -110,17 +137,18 @@ int addSchedule(int updateTrainID) {
     printf("Enter Arrival Time (HH:MM): ");
     scanf("%d:%d", &schedule.time.arrivalHour, &schedule.time.arrivalMin);
 
-    if (schedule.availableSeats <= 0) {
+    if (updateSeats <= 0) {
         printf("No available seats.\n");
+        fclose(fptr);
         return updateTrainID;
     }
 
+    schedule.availableSeats = updateSeats;
+
     printf("Available Seats: %d\n", schedule.availableSeats);
 
-
-
     fprintf(fptr, "T%d, %s, %s, %02d:%02d, %02d:%02d, %d\n",
-        schedule.trainID,
+        updateTrainID,
         schedule.departureStation,
         schedule.arrivalStation,
         schedule.time.departureHour,
@@ -129,11 +157,10 @@ int addSchedule(int updateTrainID) {
         schedule.time.arrivalMin,
         schedule.availableSeats);
 
-    updateSeats--;
-
     fclose(fptr);
     return updateTrainID;
 }
+
 
 
 
